@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <stddef.h>
 
 #define MAX_SIZE ((unsigned long long)1 << 46)
 
@@ -11,6 +13,16 @@
 
 void *valloc_(unsigned long long sz) 
 {
+    int page_size = getpagesize();
+    if (-1 == page_size)
+    {
+        fprintf(stderr, "getpagesize couldn't get the page size");
+        return NULL;
+    }
+
+    // size is rounded to page size
+    sz = (sz / page_size + 1) * page_size;
+
     // reserve a virtual address space
     void *ptr = mmap(NULL, MAX_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (NULL == ptr)
@@ -31,7 +43,6 @@ void *valloc_(unsigned long long sz)
 
 int vfree(void *ptr)
 {
-    // release the reserved address space
     if (-1 == munmap(ptr, MAX_SIZE))
     {
         fprintf(stderr, "munmap couldn't remove the address space of size %lld bytes", MAX_SIZE);
@@ -43,6 +54,16 @@ int vfree(void *ptr)
 
 void *vrealloc(void *ptr, unsigned long long new_sz) 
 {
+    int page_size = getpagesize();
+    if (-1 == page_size)
+    {
+        fprintf(stderr, "getpagesize couldn't get the page size");
+        return NULL;
+    }
+
+    // size is rounded to page size
+    new_sz = (new_sz / page_size + 1) * page_size;
+
     // commit the new size to the VAS    
     if (-1 == mprotect(ptr, new_sz, PROT_WRITE))
     {
@@ -75,13 +96,9 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    // init with random values
-    for(int *start = int_array, *end = int_array + 5; start != end; 
-            start++, *start = (unsigned long)start % 69);
+    for(int *start = int_array, *end = int_array + 5; start != end; start++, *start = (unsigned long long)start % 69);
 
-    // print the values
-    for(int *start = int_array, *end = int_array + 5; start != end; start++) 
-            printf("%d ", *start);
+    for(int *start = int_array, *end = int_array + 5; start != end; start++) printf("%d ", *start);
 
     printf("\n");
 
@@ -93,11 +110,9 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    // init with random values
     for(int *start = int_array, *end = int_array + 6; start != end; 
-            start++, *start = (unsigned long)start % 69);
+            start++, *start = (unsigned long long)start % 69);
 
-    // print the values
     for(int *start = int_array, *end = int_array + 6; start != end; start++) 
             printf("%d ", *start);
 
