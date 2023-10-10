@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include <stddef.h>
 
 #define MAX_SIZE ((unsigned long long)1 << 46)
 
@@ -52,6 +51,11 @@ int vfree(void *ptr)
     return 0;
 }
 
+unsigned ceil_p2(unsigned x, unsigned p2)
+{
+    return x + p2 - 1 & -p2;
+}
+
 void *vrealloc(void *ptr, unsigned long long new_sz) 
 {
     int page_size = getpagesize();
@@ -61,18 +65,25 @@ void *vrealloc(void *ptr, unsigned long long new_sz)
         return NULL;
     }
 
-    // size is rounded to page size
-    new_sz = (new_sz / page_size + 1) * page_size;
+    // size is rounded up to page size
+    new_sz = ceil_p2(new_sz, page_size);
 
-    // commit the new size to the VAS    
+    // check for new_sz 
+    if(new_sz > MAX_SIZE) 
+    {
+        fprintf(stderr, "new_sz is bigger than the max size: %lld", MAX_SIZE);
+        return NULL;
+    }
+
+    // commit the new size from the VAS    
     if (-1 == mprotect(ptr, new_sz, PROT_WRITE))
     {
         fprintf(stderr, "mpotect couldn't write %lld bytes to address space with WRITE protection", new_sz);
         return NULL;
     }
 
-    // check for new_sz 
-    if(new_sz >= MAX_SIZE) 
+    // if new_sz is MAX_SIZE you will go out of scope when decommiting
+    if(new_sz == MAX_SIZE)
     {
         return ptr;
     }
