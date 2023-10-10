@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.26)
 project(alloc1)
 
-add_library(alloc1 alloc1.c)
+add_library(alloc1 alloc1.cpp)
 target_include_directories(alloc1 PUBLIC ./)
 
-add_executable(example main.c)
+add_executable(example main.cpp)
 target_link_libraries(example PUBLIC alloc1)
 target_include_directories(example PUBLIC ./)
