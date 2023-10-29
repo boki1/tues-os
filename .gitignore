@@ -52,5 +52,9 @@ Mkfile.old
 dkms.conf
 
 out/
-cmake-build-debug/
 .idea/
+.cache/
+.fleet/
+.idea/
+cmake-build-debug/
+compile-commands.json
