@@ -1,107 +1,109 @@
+#include <assert.h>
+#include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
 #include <sys/mman.h>
-#include <errno.h>
+#include <unistd.h>
 
-#define MAX_SIZE ((unsigned long long)1 << 46)
+// This value is calculated using the find-max-vas-size.c example
+#define MAX_SIZE ((uint64_t)1 << 46)
 
 #ifndef MAP_ANONYMOUS
-    #define MAP_ANONYMOUS 32
+#define MAP_ANONYMOUS 32
 #endif
 
-void *valloc_(unsigned long long sz) 
-{
-    int page_size = getpagesize();
-    if (-1 == page_size)
-    {
-        fprintf(stderr, "getpagesize couldn't get the page size");
-        return NULL;
-    }
+/*
+ * Helpers.
+ */
 
-    // size is rounded to page size
-    sz = (sz / page_size + 1) * page_size;
+#define MUST(condition_expr, on_error_expr)                                    \
+  if (!(condition_expr)) {                                                     \
+    on_error_expr;                                                             \
+    goto error;                                                                \
+  }
 
-    // reserve a virtual address space
-    void *ptr = mmap(NULL, MAX_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (NULL == ptr)
-    {
-        fprintf(stderr, "mmap could't reserve %lld bytes", MAX_SIZE);
-        return NULL;
-    }
+uint64_t floor_p2(uint64_t x, uint64_t p2) { return x & -p2; }
 
-    // commit sz bytes to physical memory
-    if (-1 == mprotect(ptr, sz, PROT_WRITE))
-    {
-        fprintf(stderr, "mprotect couldn't change the protection to write after VAS is reserved");
-        return NULL;
-    }
+uint64_t ceil_p2(uint64_t x, uint64_t p2) { return x + p2 - 1 & -p2; }
 
-    return ptr;
+/*
+ * Caches the value returned by the first successful sysconf(_SC_PAGESIZE).
+ */
+static ssize_t page_size() {
+  static ssize_t _page_size = -1;
+  if (_page_size == -1)
+    _page_size = sysconf(_SC_PAGESIZE);
+  return _page_size;
 }
 
-int vfree(void *ptr)
-{
-    if (-1 == munmap(ptr, MAX_SIZE))
-    {
-        fprintf(stderr, "munmap couldn't remove the address space of size %lld bytes", MAX_SIZE);
-        return -1;
-    }
+/*
+ * Allocator operations.
+ */
 
-    return 0;
+void *vallocate(uint64_t sz) {
+  const ssize_t page = page_size();
+  MUST(page > 0, perror("page_size"));
+
+  // Allocation sizes are aligned to the page size.
+  sz = ceil_p2(sz, page);
+
+  // Reserve MAX_SIZE regardless of the desired size in order to not have to
+  // move memory on reallocation.
+  void *ptr =
+      mmap(NULL, MAX_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  MUST(ptr != MAP_FAILED, perror("mmap"));
+
+  // However commit only the desired amount to physical memory.
+  MUST(!mprotect(ptr, sz, PROT_WRITE), perror("mprotect"));
+
+  return ptr;
+
+  // Jumps from MUST() come here.
+error:
+  return NULL;
 }
 
-unsigned ceil_p2(unsigned x, unsigned p2)
-{
-    return x + p2 - 1 & -p2;
+int vdeallocate(void *ptr) {
+  MUST(munmap(ptr, MAX_SIZE) != -1, perror("munmap"));
+  return 0;
+
+  // Jump from MUST() come here.
+error:
+  return -1;
 }
 
-void *vrealloc(void *ptr, unsigned long long new_sz) 
-{
-    int page_size = getpagesize();
-    if (-1 == page_size)
-    {
-        fprintf(stderr, "getpagesize couldn't get the page size");
-        return NULL;
-    }
+void *vreallocate(void *ptr, uint64_t new_sz) {
+  const ssize_t page = page_size();
+  MUST(page > 0, perror("page_size"));
 
-    // size is rounded up to page size
-    new_sz = ceil_p2(new_sz, page_size);
+  // Allocation sizes are aligned to the page size.
+  new_sz = ceil_p2(new_sz, page);
+  MUST(new_sz <= MAX_SIZE,
+       fprintf(stderr, "new_sz is bigger than the max size: %lu", MAX_SIZE));
 
-    // check for new_sz 
-    if(new_sz > MAX_SIZE) 
-    {
-        fprintf(stderr, "new_sz is bigger than the max size: %lld", MAX_SIZE);
-        return NULL;
-    }
+  MUST(!mprotect(ptr, new_sz, PROT_WRITE), perror("mprotect"));
 
-    // commit the new size from the VAS    
-    if (-1 == mprotect(ptr, new_sz, PROT_WRITE))
-    {
-        fprintf(stderr, "mpotect couldn't write %lld bytes to address space with WRITE protection", new_sz);
-        return NULL;
-    }
+  // Decommit any unused memory.
+  if (new_sz < MAX_SIZE) {
+    const uintptr_t decommit_addr = ceil_p2((uint64_t)ptr + new_sz, page);
+    const uint64_t pad_sz = decommit_addr - (uint64_t)ptr;
+    MUST(
+        !mprotect((void *)decommit_addr, MAX_SIZE - new_sz + pad_sz, PROT_NONE),
+        perror("mprotect"));
+  }
 
-    // if new_sz is MAX_SIZE you will go out of scope when decommiting
-    if(new_sz == MAX_SIZE)
-    {
-        return ptr;
-    }
+  return ptr;
 
-    // decommiting the remaining address space
-    if (-1 == mprotect(ptr + new_sz, MAX_SIZE - new_sz, PROT_NONE))
-    {
-        fprintf(stderr, "mpotect couldn't decommit the remaining address space %lld\n", MAX_SIZE - new_sz);
-        return NULL;
-    }
-
-    return ptr;
+error:
+  return NULL;
 }
 
 int main(int argc, char const *argv[])
 {
-    int *int_array = valloc_(5 * sizeof(int));
-    if (NULL == int_array) 
+    int *int_array = vallocate(5 * sizeof(int));
+    if (NULL == int_array)
     {
         perror("Error from valloc");
         exit(1);
@@ -113,7 +115,7 @@ int main(int argc, char const *argv[])
 
     printf("\n");
 
-    int_array = vrealloc(int_array, 6 * sizeof(int));
+    int_array = vreallocate(int_array, 6 * sizeof(int));
 
     if(NULL == int_array)
     {
@@ -121,15 +123,15 @@ int main(int argc, char const *argv[])
         exit(1);
     }
 
-    for(int *start = int_array, *end = int_array + 6; start != end; 
+    for(int *start = int_array, *end = int_array + 6; start != end;
             start++, *start = (unsigned long long)start % 69);
 
-    for(int *start = int_array, *end = int_array + 6; start != end; start++) 
+    for(int *start = int_array, *end = int_array + 6; start != end; start++)
             printf("%d ", *start);
 
     printf("\n");
 
-    if (-1 == vfree(int_array))
+    if (-1 == vdeallocate(int_array))
     {
         perror("Error from vfree");
         exit(1);
