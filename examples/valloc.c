@@ -100,42 +100,55 @@ error:
   return NULL;
 }
 
-int main(int argc, char const *argv[])
-{
-    int *int_array = vallocate(5 * sizeof(int));
-    if (NULL == int_array)
-    {
-        perror("Error from valloc");
-        exit(1);
-    }
+/*
+ * Simple test case with array of integers.
+ */
 
-    for(int *start = int_array, *end = int_array + 5; start != end; start++, *start = (unsigned long long)start % 69);
+void intset(int *s, int c, size_t n) {
+  for (int *p = s; p < s + n; ++p)
+    *p = c;
+}
 
-    for(int *start = int_array, *end = int_array + 5; start != end; start++) printf("%d ", *start);
+int main(int argc, char const *argv[]) {
+  const size_t numbytes = 5 * sizeof(int);
+  int *ptr = vallocate(numbytes);
+  intset(ptr, 0xA, numbytes);
+  assert(ptr != NULL);
+  assert(ptr[3] == 0xA);
 
-    printf("\n");
+  const size_t big_new_size = 1 << 10;
+  int *big_new_ptr = vreallocate(ptr, big_new_size);
+  assert(big_new_ptr != NULL);
+  assert(big_new_ptr == ptr);
+  intset(ptr, 0xB, big_new_size);
+  assert(big_new_ptr[1000] == 0xB);
+  big_new_ptr[1000] = 0xBB;
+  assert(big_new_ptr[1000] == 0xBB);
 
-    int_array = vreallocate(int_array, 6 * sizeof(int));
+  const size_t small_new_size = 10;
+  int *small_new_ptr = vreallocate(ptr, small_new_size);
+  assert(small_new_ptr != NULL);
+  assert(small_new_ptr == ptr);
+  intset(ptr, 0xC, small_new_size);
+  assert(small_new_ptr[8] == 0xC);
+  small_new_ptr[8] = 0xCC;
+  assert(small_new_ptr[8] == 0xCC);
 
-    if(NULL == int_array)
-    {
-        perror("Error from vrealloc");
-        exit(1);
-    }
+  // FIXME
+#if 0
+  const size_t large_new_size = MAX_SIZE - 1;
+  int *large_new_ptr = vreallocate(ptr, large_new_size);
+  assert(large_new_ptr != NULL);
+  assert(large_new_ptr == ptr);
+  intset(ptr, 0xD, large_new_size);
+  assert(large_new_ptr[121341] == 0xD);
+  large_new_ptr[121341] = 0xDD;
+  assert(large_new_ptr[121341] == 0xDD);
+#endif
 
-    for(int *start = int_array, *end = int_array + 6; start != end;
-            start++, *start = (unsigned long long)start % 69);
+  const int rc_deallocate = vdeallocate(ptr);
+  assert(!rc_deallocate);
 
-    for(int *start = int_array, *end = int_array + 6; start != end; start++)
-            printf("%d ", *start);
-
-    printf("\n");
-
-    if (-1 == vdeallocate(int_array))
-    {
-        perror("Error from vfree");
-        exit(1);
-    }
-
-    return 0;
+  printf("OK - all assertions succeed.\n");
+  return 0;
 }
