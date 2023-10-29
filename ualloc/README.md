@@ -25,3 +25,7 @@ $ cmake -S. -Bcmake-build-debug -GNinja
 $ cmake --build cmake-build-debug
 $ cd cmake-build-debug && ctest --rerun-failed --output-on-failure
 ```
+
+## To do
+
+Pretty much only a skeleton has been put together so far.

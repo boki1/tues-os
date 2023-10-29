@@ -11,6 +11,10 @@ _Dependency: `make`, `gcc`_
 The resulting binaries are compiled in Debug mode and are placed inside
 `examples/out/`.
 
+**To do**
+
+- [ ] Fix valloc in the "large" allocation case
+
 -----------
 
 **find-max-vas-size.c**
