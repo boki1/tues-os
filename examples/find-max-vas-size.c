@@ -32,7 +32,7 @@ int main(int argc, char const *argv[])
         }
     }
 
-    printf("Max size = %ld", max_size);
+    printf("Max size = 1 << %ld\n", max_size);
 
     return 0;
 }
