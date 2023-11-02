@@ -42,12 +42,12 @@ void* OAllocator::xalloc(size_t size)
 {
     size = ceil_p2(size, PAGE_SIZE);
 
-    if(size < ENTRY_SIZE - HEADER_SIZE)
-    {
-        void *ptr = heap.alloc(&heap, size);
-        addr2size[ptr] = size;
-        return ptr;
-    }
+//    if(size < ENTRY_SIZE - HEADER_SIZE)
+//    {
+//        void *ptr = heap.alloc(&heap, size);
+//        addr2size[ptr] = size;
+//        return ptr;
+//    }
 
     // find free space
     auto key_iter = std::lower_bound(size2addr.cbegin(), size2addr.cend(), size, [](const auto& curr, size_t size) {
@@ -97,11 +97,11 @@ void OAllocator::xfree(void* ptr)
     // pop the ptr from the map with allocated addresses
     addr2size.erase(ptr);
 
-    if(pointer.size < ENTRY_SIZE - HEADER_SIZE)
-    {
-        heap.free(&heap, pointer.addr, pointer.size);
-        return;
-    }
+//    if(pointer.size < ENTRY_SIZE - HEADER_SIZE)
+//    {
+//        heap.free(&heap, pointer.addr, pointer.size);
+//        return;
+//    }
 
     if(-1 == mprotect(pointer.addr, pointer.size, PROT_NONE))
         throw std::exception();

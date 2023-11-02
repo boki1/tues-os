@@ -9,7 +9,7 @@
 
 int main(int argc, char **argv)
 {
-    int *ptr = (int*)OAllocator::get_allocator().xalloc(sizeof(int) * (1 << 10));
+    int *ptr = (int*)OAllocator::get_allocator().xalloc(sizeof(int) * (1 << 30));
 
     for(int i = 0; i < 50; i++)
     {
