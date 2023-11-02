@@ -70,7 +70,7 @@ void* OAllocator::xalloc(size_t size)
     };
 
     // insert the new key
-    if(!new_key.size)
+    if(new_key.size)
         size2addr[new_key] = nullptr;
 
     // add the allocated address to the map with allocated addresses
