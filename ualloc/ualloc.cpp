@@ -58,7 +58,7 @@ namespace ualloc {
 
     allocator::~allocator() noexcept
     {
-      MUST(!munmap(m_reserved_ptr, m_max_reserve_size), "munmap");
+        MUST(!munmap(m_reserved_ptr, m_max_reserve_size), "munmap");
     }
 
     /*
@@ -68,7 +68,7 @@ namespace ualloc {
     void* allocator::allocate(std::size_t target_size)
     {
         const auto first_fit_it = m_ordered.lower_bound({target_size});
-        if (first_fit_it == m_ordered.end())
+        if (first_fit_it == m_ordered.end() || first_fit_it->first.size < target_size)
             return nullptr;
 
         const auto first_fit = first_fit_it->first;
@@ -84,12 +84,15 @@ namespace ualloc {
             m_addr2size[entry.addr] = entry.size;
         }
 
-       // TRY_OR(!mprotect(as_voidp(first_fit.addr), first_fit.size, PROT_WRITE), "mprotect PROT_WRITE");
+        // TRY_OR(!mprotect(as_voidp(first_fit.addr), first_fit.size, PROT_WRITE), "mprotect PROT_WRITE");
         return as_voidp(first_fit.addr);
     }
 
     void allocator::free(void* ptr, size_t size) noexcept
     {
+        if (ptr < m_reserved_ptr || ptr >= as_voidp(as_uint(m_reserved_ptr) + m_max_reserve_size))
+            return;
+
         size_addr entry{
                 .size = size,
                 .addr = as_uint(ptr)};
@@ -115,7 +118,7 @@ namespace ualloc {
 
         m_addr2size[entry.addr] = entry.size;
         m_ordered[entry] = as_voidp(entry.addr);
-      //  MUST(!mprotect(as_voidp(entry.addr), entry.size, PROT_NONE), "mprotect PROT_NONE");
+        //  MUST(!mprotect(as_voidp(entry.addr), entry.size, PROT_NONE), "mprotect PROT_NONE");
     }
 
 }// namespace ualloc
