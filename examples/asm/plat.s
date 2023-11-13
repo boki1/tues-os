@@ -1,6 +1,7 @@
 	global f
 	global swap
 	global g
+	global memcpy_dummy
 
 	segment .text
 f:
@@ -20,4 +21,13 @@ swap:
 
 g:
 	mov rax, [rdi + rsi * 8]
+	ret
+
+memcpy_dummy:
+	mov al, [rsi]
+	mov [rdi], al
+	add rdi, 1
+	add rsi, 1
+	sub rdx , 1
+	jnz memcpy_dummy
 	ret
