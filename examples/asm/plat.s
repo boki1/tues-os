@@ -3,6 +3,8 @@
 	global g
 	global memcpy_dummy
 	global bulk_sum
+	global max
+	global add_many
 
 	segment .text
 f:
@@ -43,4 +45,20 @@ bulk_sum:
 	add rax, [rsp+0x8]
 	mov rsi, [rsp+0x10]
 	add rax, [rsi]
+	ret
+
+max:
+	cmp rdi, rsi
+	cmovb rdi, rsi
+	mov rax, rdi
+	ret
+
+add_many: ; res is rdi, l is rsi, r is rdx, cnt is rcx
+	clc
+loop:
+	mov r8, [rsi + (rcx - 1) * 8]
+	adc r8, [rdx + (rcx - 1) * 8]
+	mov [rdi + (rcx - 1) * 8], r8
+	dec rcx
+	jnz loop
 	ret
