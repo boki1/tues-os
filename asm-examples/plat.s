@@ -5,8 +5,22 @@
 	global bulk_sum
 	global max
 	global add_many
+	global sub_many
+	global _ZplRK2ssS1_
+	global _Zpl5vec2dS_
+	global zzz, const_zzz, zeroed_zzz
+
+	segment .bss
+zeroed_zzz:	resd 1
+
+	segment .rdata
+const_zzz:	dq 0x1210
+
+	segment .data
+zzz:	dd 	0x1234
 
 	segment .text
+
 f:
 	push rbp
 	mov rbp, rsp
@@ -61,4 +75,25 @@ loop:
 	mov [rdi + (rcx - 1) * 8], r8
 	dec rcx
 	jnz loop
+	ret
+
+sub_many:
+	ret
+
+_ZplRK2ssS1_:
+	xor rax, rax
+	ret
+
+	struc vec2d
+vec_x: resq 1
+vec_y: resq 1
+	endstruc
+
+_Zpl5vec2dS_:
+	movsd xmm0, [rdi+vec_x]
+	addsd xmm0, [rsi+vec_x]
+	movsd [rdi+vec_x], xmm0
+	movsd xmm0, [rdi+vec_y]
+	addsd xmm0, [rsi+vec_y]
+	movsd [rdi+vec_y], xmm0
 	ret
