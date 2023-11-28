@@ -7,6 +7,10 @@ OUT_DIR := out
 
 all: $(FILES_C) $(FILES_CPP)
 
+atomic: atomic.cpp _outdirs
+	nasm -g -f elf64 atomic.s
+	g++ -Xlinker --no-demangle $(CFLAGS) atomic.cpp atomic.o -o out/atomic
+
 %: %.c _outdirs
 	gcc $< $(CFLAGS) -o $@
 	mv $@ $(OUT_DIR)/
@@ -19,7 +23,7 @@ _outdirs:
 	mkdir -p $(OUT_DIR)
 
 clean:
-	rm -rf $(OUT_DIR)
+	rm -rf $(OUT_DIR) atomic.o
 
 .PHONY: all clean
 
