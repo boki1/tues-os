@@ -65,3 +65,14 @@ over a 3-minute run:
 </center>
 
 ----
+
+_Example 5 `lock.cpp, lock.s`_
+
+Implementation of a simple mutex-like object called `lock`. It uses the
+atomic versions of the `bts` and `btr` versions it order to keep track
+whether it is locked. It doesn't keep track of which thread have
+operated on it, so it will not check whether the same thread that
+acquired it calls release and it will also not store any blocked
+threads.
+
+----
