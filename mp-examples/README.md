@@ -44,10 +44,15 @@ $ echo "std::array arr{" > ${FILE} \
 _Example 4 `philosophers.cpp`_
 
 Implementation of "The Dining Philosophers" problem.
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/An_illustration_of_the_dining_philosophers_problem.png" width="300">
+
 The solutions is dead-lock free since exactly one of the five
 philosophers is left-handed, whereas the other are right-handed.
 The solution is also starvation free. The following are some statistics
 over a 3-minute run:
+
+<center>
 
 | 3m run	    | Thinking | Eating | Sleeping |
 | ------------- | -------- | ------ | -------- |
@@ -56,5 +61,7 @@ over a 3-minute run:
 | Adeimantus  	| 59       | 58     | 58       |
 | Polemarchus 	| 63       | 62     | 62       |
 | Thrasymachus	| 64       | 64     | 63       |
+
+</center>
 
 ----
