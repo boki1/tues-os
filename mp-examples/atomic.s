@@ -56,7 +56,7 @@ _ZN6atomicIlE9fetch_andEl: ; Int fetch_and(Int);
 cas_loop_fetch_and:
 	mov r8, rax
 	and r8, rsi
-	cmpxchg [rdi], r8 	; FIXME: NASM gives "instruction is not lockable" warning.
+	lock cmpxchg [rdi], r8
 	sete cl
 	test cl, cl
 	je cas_loop_fetch_and
@@ -67,7 +67,7 @@ _ZN6atomicIlE8fetch_orEl: ; Int fetch_or(Int);
 cas_loop_fetch_or:
 	mov r8, rax
 	or r8, rsi
-	cmpxchg [rdi], r8 	; FIXME: NASM gives "instruction is not lockable" warning.
+	lock cmpxchg [rdi], r8
 	sete cl
 	test cl, cl
 	je cas_loop_fetch_or
@@ -78,7 +78,7 @@ _ZN6atomicIlE9fetch_xorEl: ; Int fetch_xor(Int);
 cas_loop_fetch_xor:
 	mov r8, rax
 	xor r8, rsi
-	cmpxchg [rdi], r8 	; FIXME: NASM gives "instruction is not lockable" warning.
+	lock cmpxchg [rdi], r8
 	sete cl
 	test cl, cl
 	je cas_loop_fetch_xor
@@ -94,7 +94,7 @@ _ZN6atomicIlE5storeEl: ; void store(Int);
 
 _ZN6atomicIlE21compare_exchange_weakERll: ; Int compare_exchange_weak(this rdi, Int &expected_rsi, Int desired_rdx);
 	mov rax, [rsi]
-	cmpxchg [rdi], rdx 	; FIXME: NASM gives "instruction is not lockable" warning.
+	lock cmpxchg [rdi], rdx
 	sete al
 	movzx rax, al
 	ret
