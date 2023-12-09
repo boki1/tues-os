@@ -15,6 +15,10 @@ lock: lock.cpp _outdirs
 	nasm -g -f elf64 lock.s
 	g++ -O0 -Xlinker --no-demangle $(CFLAGS) lock.cpp lock.o -o out/lock
 
+cachetest: cachetest.cpp
+	g++ $< -O3 -o $@
+	mv $@ $(OUT_DIR)/
+
 %: %.c _outdirs
 	gcc $< $(CFLAGS) -o $@
 	mv $@ $(OUT_DIR)/
