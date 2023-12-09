@@ -31,7 +31,7 @@ _outdirs:
 	mkdir -p $(OUT_DIR)
 
 clean:
-	rm -rf $(OUT_DIR) atomic.o
+	rm -rf $(OUT_DIR) *.o
 
 .PHONY: all clean
 
