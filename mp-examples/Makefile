@@ -19,6 +19,9 @@ cachetest: cachetest.cpp
 	g++ $< -O3 -o $@
 	mv $@ $(OUT_DIR)/
 
+cache_bm: cache_bm.cpp
+	g++ $< -std=c++20 -isystem benchmark/include -Lbenchmark/build/src -lbenchmark -lpthread -o cache_bm
+
 %: %.c _outdirs
 	gcc $< $(CFLAGS) -o $@
 	mv $@ $(OUT_DIR)/
