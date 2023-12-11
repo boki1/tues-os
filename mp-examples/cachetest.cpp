@@ -1,39 +1,41 @@
 #include <chrono>
 #include <iostream>
-#include <vector>
+#include <thread>
 
 using namespace std::chrono;
+using namespace std::chrono_literals;
 
 template <typename Fun, typename ...Args>
 auto timeit(Fun &&fun, Args &&...args) {
 	const auto start = high_resolution_clock::now();
 	fun(std::forward<Args>(args)...);
 	const auto end = high_resolution_clock::now();
-	return duration_cast<microseconds>(end - start);
+	return duration_cast<milliseconds>(end - start);
 }
 
-void inc_ints(std::uint64_t count, std::uint64_t *dest) {
+void inc_ints(std::uint64_t *ints, std::uint64_t size) {
 	static constexpr auto REPEATS = 1 << 12;
-	for (int i = 0; i < REPEATS; ++i)
-		for (std::uint64_t j = 0; j < count; ++j)
-			++dest[j];
+	for (std::uint64_t r = 0; r < REPEATS; ++r)
+		for (std::uint64_t i = 0; i < size; ++i)
+			++ints[i];
 }
 
 int main() {
-	constexpr std::uint64_t MAX_COUNT = 1 << 30;
+	constexpr std::uint64_t MAX_COUNT = 1 << 18;
 	constexpr std::uint64_t STEP_COUNT = 1 << 12;
 
-	std::uint64_t *dest = new std::uint64_t[MAX_COUNT];
-	// std::fill_n(dest, MAX_COUNT, 0);
+	std::this_thread::sleep_for(500ms);
+
+	std::uint64_t *ints = new std::uint64_t[MAX_COUNT];
 	for (std::uint64_t count = STEP_COUNT;
 			count < MAX_COUNT;
 			count += STEP_COUNT) {
-		const auto dur = timeit(inc_ints, count, dest);
-		std::cout << "size = " << (count >> 7) << "KB, "
-					 "duration = " << dur.count() << "us, "
-					 "(" << static_cast<long double>(count) / dur.count() << " incs/us)\n";
+		const auto dur = timeit(inc_ints, ints, count);
+		std::cout << "incs = " << count << ", "
+					 "duration = " << dur.count() << "ms, "
+					 "(" << static_cast<long double>(count) / dur.count() << " incs/ms)\n";
 	}
-	delete[] dest;
+	delete[] ints;
 
 	return 0;
 }
