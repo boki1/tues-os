@@ -15,6 +15,9 @@ lock: lock.cpp _outdirs
 	nasm -g -f elf64 lock.s
 	g++ -O0 -Xlinker --no-demangle $(CFLAGS) lock.cpp lock.o -o out/lock
 
+rwlock: rwlock.cpp _outdirs
+	g++ -O3 -std=c++23 rwlock.cpp -o out/rwlock
+
 cachetest: cachetest.cpp
 	g++ $< -O3 -o $@
 	mv $@ $(OUT_DIR)/
