@@ -6,7 +6,6 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <malloc.h>
 #include <assert.h>
 
 struct thread_args
@@ -55,8 +54,8 @@ void *receive_thread(void *arg)
 int main()
 {
     struct addrinfo *mcast, /* *remote, */ hints = {
-        .ai_family = AF_INET,
-        .ai_socktype = SOCK_DGRAM,
+            .ai_family = AF_INET,
+            .ai_socktype = SOCK_DGRAM,
     };
     int gai_err;
     if ((gai_err = getaddrinfo("224.0.12.34", "8888", &hints, &mcast)) < 0)
@@ -83,17 +82,17 @@ int main()
 
     pthread_t send_tid, recv_tid;
     struct thread_args send_args = {
-        .sfd = sfd,
-        .addr = mcast->ai_addr,
-        .addrlen = mcast->ai_addrlen,
+            .sfd = sfd,
+            .addr = mcast->ai_addr,
+            .addrlen = mcast->ai_addrlen,
     };
     if (pthread_create(&send_tid, NULL, send_thread, &send_args) != 0)
         err(1, "pthread_create");
 
     struct thread_args recv_args = {
-        .sfd = sfd,
-        //.addr = remote->ai_addr,
-        //.addrlen = remote->ai_addrlen,
+            .sfd = sfd,
+            //.addr = remote->ai_addr,
+            //.addrlen = remote->ai_addrlen,
     };
     if (pthread_create(&recv_tid, NULL, receive_thread, &recv_args) != 0)
         err(1, "pthread_create");
