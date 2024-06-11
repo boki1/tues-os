@@ -74,10 +74,16 @@ int main()
     /* if (bind(sfd, remote->ai_addr, remote->ai_addrlen) < 0)
         err(1, "bind"); */
 
-    struct group_req mreq = {0};
+    /* struct group_req mreq = {0};
     mreq.gr_group = *(struct sockaddr_storage *)mcast->ai_addr;
     mreq.gr_interface = 2;
     if (setsockopt(sfd, SOL_IP, MCAST_JOIN_GROUP, &mreq, sizeof mreq) < 0)
+        err(1, "setsockopt"); */
+
+    struct ip_mreq mreq = {0};
+    mreq.imr_multiaddr = ((struct sockaddr_in *)mcast->ai_addr)->sin_addr;
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    if (setsockopt(sfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof mreq) < 0)
         err(1, "setsockopt");
 
     pthread_t send_tid, recv_tid;
